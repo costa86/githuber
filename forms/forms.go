@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/huh"
 )
 
+var accessible = os.Getenv("GITHUB_AUTOMATOR_ACCESSIBLE") != ""
+
 type Action int
 
 const (
@@ -49,7 +51,7 @@ func GetOperation() string {
 		Title("Pick and action").Value(&operation)
 	group1 := huh.NewGroup(operationSelect)
 
-	form := huh.NewForm(group1)
+	form := huh.NewForm(group1).WithAccessible(accessible)
 	err := form.Run()
 
 	if err != nil {
@@ -64,7 +66,7 @@ func DeleteRepoForm(repos []string) string {
 	repoSelector := huh.NewSelect[string]().Options(huh.NewOptions(repos...)...).
 		Title(fmt.Sprintf("Pick a repo (%d)", len(repos))).Value(&selectedRepo)
 	group1 := huh.NewGroup(repoSelector)
-	form := huh.NewForm(group1)
+	form := huh.NewForm(group1).WithAccessible(accessible)
 	err := form.Run()
 	if err != nil {
 		fmt.Println("Uh oh:", err)
@@ -78,7 +80,7 @@ func DeleteRepoConfirmForm(repo string) bool {
 	confirm := huh.NewConfirm().Title(fmt.Sprintf("Are you sure you want to delete %s?", repo)).Value(&delete)
 	group1 := huh.NewGroup(confirm)
 
-	form := huh.NewForm(group1)
+	form := huh.NewForm(group1).WithAccessible(accessible)
 	err := form.Run()
 
 	if err != nil {
@@ -99,7 +101,7 @@ func CreateRepoForm() Repo {
 
 	group1 := huh.NewGroup(title, description, private, autoInit)
 
-	form := huh.NewForm(group1)
+	form := huh.NewForm(group1).WithAccessible(accessible)
 	err := form.Run()
 
 	if err != nil {
