@@ -58,7 +58,12 @@ func CreateRepo(client *github.Client, ctx context.Context, repo forms.Repo) {
 }
 
 func DeleteRepo(ctx context.Context, client *github.Client, repo string) {
-	_, e := client.Repositories.Delete(ctx, "costa86", repo)
+
+	user, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	_, e := client.Repositories.Delete(ctx, *user.Login, repo)
 	if e != nil {
 		fmt.Println(e)
 		os.Exit(1)
