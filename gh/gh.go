@@ -47,7 +47,7 @@ func GetRepos(ctx context.Context, client *github.Client) []string {
 	return repoNames
 }
 
-func CreateRepo(client *github.Client, ctx context.Context, repo forms.Repo) {
+func CreateRepo(client *github.Client, ctx context.Context, repo forms.Repo) string {
 
 	r := &github.Repository{Name: &repo.Title, Private: &repo.Private, Description: &repo.Description, AutoInit: &repo.AutoInit}
 	repoCreated, _, err := client.Repositories.Create(ctx, "", r)
@@ -55,6 +55,9 @@ func CreateRepo(client *github.Client, ctx context.Context, repo forms.Repo) {
 		log.Fatal(err)
 	}
 	fmt.Printf("Successfully created new repo: %v\n", repoCreated.GetName())
+
+	return *repoCreated.CloneURL
+
 }
 
 func DeleteRepo(ctx context.Context, client *github.Client, repo string) {

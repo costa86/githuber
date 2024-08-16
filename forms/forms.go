@@ -4,6 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 )
@@ -31,6 +34,7 @@ func (s Action) String() string {
 type Repo struct {
 	Title       string
 	Description string
+	Folder      string
 	Private     bool
 	AutoInit    bool
 }
@@ -44,6 +48,18 @@ func minChar(s string) error {
 	return nil
 }
 
+func checkFolderIsValid(folderPath string) error {
+	folderPath = strings.TrimSpace(folderPath)
+	stat, err := os.Stat(folderPath)
+
+	if err != nil {
+		return fmt.Errorf("'%s' is not a valid folder: %v", folderPath, err)
+	}
+	if !stat.IsDir() {
+		return fmt.Errorf("'%s' is not a folder", folderPath)
+	}
+	return nil
+}
 func GetOperation() string {
 	var operation string
 
@@ -98,8 +114,9 @@ func CreateRepoForm() Repo {
 	description := huh.NewInput().Title("Description").Value(&repo.Description)
 	private := huh.NewConfirm().Title("Private").Value(&repo.Private)
 	autoInit := huh.NewConfirm().Title("Auto-init").Value(&repo.AutoInit).Description("Create an empty README.md")
+	folder := huh.NewInput().Title("Folder").Value(&repo.Folder).Validate(checkFolderIsValid)
 
-	group1 := huh.NewGroup(title, description, private, autoInit)
+	group1 := huh.NewGroup(title, description, private, autoInit, folder)
 
 	form := huh.NewForm(group1).WithAccessible(accessible)
 	err := form.Run()
@@ -110,4 +127,59 @@ func CreateRepoForm() Repo {
 	}
 
 	return repo
+}
+
+func RunGitCommands(folderPath, repoUrl string) error {
+	folderPath = strings.TrimSpace(folderPath)
+	branchName := "main"
+
+	if _, err := os.Stat(filepath.Join(folderPath, ".git")); err == nil {
+		err = os.RemoveAll(filepath.Join(folderPath, ".git"))
+		if err != nil {
+			return fmt.Errorf("failed to delete '.git': %v", err)
+		}
+	}
+
+	cmd := exec.Command("git", "init")
+	cmd.Dir = folderPath
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to initialize git: %v", err)
+	}
+
+	cmd = exec.Command("git", "add", ".")
+	cmd.Dir = folderPath
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to add files: %v", err)
+	}
+
+	cmd = exec.Command("git", "commit", "-m", "first commit")
+	cmd.Dir = folderPath
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to commit changes: %v", err)
+	}
+
+	cmd = exec.Command("git", "branch", "-M", branchName)
+	cmd.Dir = folderPath
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to branch: %v", err)
+	}
+
+	cmd = exec.Command("git", "remote", "add", "origin", repoUrl)
+	cmd.Dir = folderPath
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to add remote: %v", err)
+	}
+
+	cmd = exec.Command("git", "push", "-u", "origin", branchName)
+	cmd.Dir = folderPath
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to push changes: %v", err)
+	}
+	return nil
 }

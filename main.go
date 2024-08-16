@@ -11,7 +11,8 @@ import (
 
 func createRepoWrapper(ctx context.Context, client *github.Client) {
 	repo := forms.CreateRepoForm()
-	gh.CreateRepo(client, ctx, repo)
+	repoUrl := gh.CreateRepo(client, ctx, repo)
+	forms.RunGitCommands(repo.Folder, repoUrl)
 }
 
 func deleteRepoWrapper(ctx context.Context, client *github.Client) {
